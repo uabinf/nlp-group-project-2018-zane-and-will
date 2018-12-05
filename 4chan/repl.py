@@ -3,14 +3,14 @@ import os
 import gensim
 import readline
 import pickle
+import nltk
 from nltk.corpus import stopwords
 from nltk.stem import LancasterStemmer
-from nltk import download
 
 import warnings
 warnings.filterwarnings('ignore', category=FutureWarning)
 
-download('stopwords')
+nltk.download('stopwords')
 
 class Model:
     def __init__(self, board):
@@ -45,6 +45,7 @@ class Model:
 
     def load(self, board, force=False):
         self.board = board
+        #self.grams = []
         print(f'loading /{self.board}/ model')
         if force:
             self.build()
@@ -81,6 +82,25 @@ class Model:
             to_print = f'Stem {word} not found in this model.'
         print(to_print)
 
+'''
+    def five_grams(self, word):
+        with open(f'text/{self.board}/comments', 'r') as f:
+            for line in f.readlines():
+                self.grams += nltk.ngrams(line.split(), 5)
+        hits = {}
+        for gram in self.grams:
+            if word in gram:
+                if gram in hits:
+                    hits[gram] += 1
+                else:
+                    hits[gram] = 1
+        culled = [{i[0]:i[1]} for i in hits.items() if i[1] > 1]
+        if len(culled) > 0:
+            print(culled[:10])
+        else:
+            print("No non-unique ngrams to show.")
+            print([hits])
+'''
 
 def repl():
     user_input = ''
@@ -114,6 +134,15 @@ def repl():
                 print('No args given.')
                 continue
             model.expand(split[1])
+
+'''
+        elif ':n' in user_input:
+            split = user_input.split(' ')
+            if len(split) < 2:
+                print('No args given.')
+                continue
+            model.five_grams(split[1])
+'''
 
         else:
             model.find(user_input)

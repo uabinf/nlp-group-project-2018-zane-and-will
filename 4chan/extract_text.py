@@ -17,10 +17,13 @@ def clean(comment):
 
     tokens = re.sub(r'\({2,}', 'TOKEN_MULTI_LEFT_PAREN', tagless)
     tokens = re.sub(r'\){2,}', 'TOKEN_MULTI_RIGHT_PAREN', tokens)
+    tokens = re.sub(r'/', 'TOKEN_FORWARD_SLASH', tokens)
     tokens = re.sub(r'>>\w+', '', tokens)
     punctless = re.sub(r'[^\w\s]', '', tokens)
+    punctless = re.sub(r'http\w+', '', punctless)
     punctless = re.sub(r'TOKEN_MULTI_LEFT_PAREN', '(((', punctless)
     punctless = re.sub(r'TOKEN_MULTI_RIGHT_PAREN', ')))', punctless)
+    punctless = re.sub(r'TOKEN_FORWARD_SLASH', '/', punctless)
 
     return punctless.lower()
 
