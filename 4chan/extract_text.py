@@ -14,9 +14,14 @@ def clean(comment):
     except ParserError:
         pass # catches blankposts
         tagless = ""
-    quoteless = re.sub(r'>>\w+', '', tagless)
-    greenless = re.sub(r'>', '', quoteless)
-    punctless = re.sub(r'[\.,]+', '', greenless)
+
+    tokens = re.sub(r'\({2,}', 'TOKEN_MULTI_LEFT_PAREN', tagless)
+    tokens = re.sub(r'\){2,}', 'TOKEN_MULTI_RIGHT_PAREN', tokens)
+    tokens = re.sub(r'>>\w+', '', tokens)
+    punctless = re.sub(r'[^\w\s]', '', tokens)
+    punctless = re.sub(r'TOKEN_MULTI_LEFT_PAREN', '(((', punctless)
+    punctless = re.sub(r'TOKEN_MULTI_RIGHT_PAREN', ')))', punctless)
+
     return punctless.lower()
 
 def init(board):
