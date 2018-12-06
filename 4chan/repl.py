@@ -6,6 +6,8 @@ import pickle
 import nltk
 from nltk.corpus import stopwords
 from nltk.stem import LancasterStemmer
+from nltk.cluster import KMeansClusterer
+from nltk.cluster.util import cosine_distance
 from operator import itemgetter
 
 import warnings
@@ -38,10 +40,10 @@ class Model:
                             self.stem_map[stemmed_word] = set([word])
                         tokens.append(stemmed_word)
                 self.posts.append(tokens)
-        self.model = gensim.models.Word2Vec(self.posts, workers=8, size=250)
+        self.model = gensim.models.Word2Vec(self.posts, workers=8, size=300)
 
     def save(self):
-        print(f'saving {self.board}/ model')
+        print(f'saving /{self.board}/ model')
         self.model.save(f'models/{self.board}.model')
         with open(f'models/{self.board}.dat', 'wb') as f:
             data = {'posts':self.posts,
@@ -50,8 +52,8 @@ class Model:
             pickle.dump(data, f)
 
     def load(self, board, force=False):
-        print(f'loading /{self.board}/ model')
         self.board = board
+        print(f'loading /{self.board}/ model')
         self.posts = list()
         self.stem_map = dict()
         self.grams = dict()
@@ -81,9 +83,9 @@ class Model:
                 self.grams[i] += nltk.ngrams(post, i)
 
     def compare(self, w1, w2):
-        w1 = self.stemmer.stem(split[1])
-        w2 = self.stemmer.stem(split[2])
-        print(model.wv.similarity(w1, w2))
+        w1 = self.stemmer.stem(w1)
+        w2 = self.stemmer.stem(w2)
+        print(self.model.wv.similarity(w1, w2))
 
     def expand(self, word):
         try:
@@ -114,11 +116,33 @@ class Model:
             print("no non-unique ngrams to show")
 
     def find(self, word, n=10):
+        n = int(n)
         try:
             print(self.model.wv.most_similar(self.stemmer.stem(word), topn=n))
         except KeyError:
             print(f"{word} is not in the vocabulary")
 
+    def kdump(self):
+        pass
+
+    def kgen(self, num):
+        num = int(num)
+        clusterer = KMeansClusterer(num, distance=cosine_distance, repeats=20)
+        vecs = self.model.wv[self.model.wv.vocab]
+        assignments = clusterer.cluster(vecs, assign_clusters=True)
+        self.vocab_to_cluster_map = dict(zip(self.model.wv.vocab, assignments))
+        self.clusters = dict()
+        for word, index in self.vocab_to_cluster_map.items():
+            if index in self.clusters:
+                self.clusters[index] += word
+            else:
+                self.clusters[index] = [word]
+
+    def klookup(self, word):
+        try:
+            print(self.vocab_to_cluster_map[self.stemmer.stem(word)])
+        except KeyError:
+            print(f"{word} is not in the vocabulary")
 
 def extract_args(user_input, expected_num):
     if not isinstance(expected_num, list):
@@ -126,7 +150,7 @@ def extract_args(user_input, expected_num):
     split = user_input.split(' ')
     if len(split) - 1 not in expected_num:
         raise InsufficientArgs(expected_num)
-    return split[1:]
+    return split
 
 def repl():
     user_input = ''
@@ -151,11 +175,11 @@ def repl():
                 print('<word> [x]   -- shows the top x most similar words to word.')
 
             elif ':o!' in user_input:
-                board = extract_args(user_input, 1)
+                board = extract_args(user_input, 1)[1:]
                 model.load(*board, True)
 
             elif ':o' in user_input:
-                board = extract_args(user_input, 1)
+                board = extract_args(user_input, 1)[1:]
                 model.load(*board)
 
             elif ':w' in user_input:
@@ -165,20 +189,31 @@ def repl():
                 model.reload()
 
             elif ':bn' in user_input:
-                lower, upper = extract_args(user_input, 2)
+                lower, upper = extract_args(user_input, 2)[1:]
                 model.build_ngrams(lower, upper)
 
             elif ':c' in user_input:
-                w1, w2 = extract_args(user_input, 2)
+                w1, w2 = extract_args(user_input, 2)[1:]
                 model.compare(w1, w2)
 
             elif ':e' in user_input:
-                word = extract_args(user_input, 1)
+                word = extract_args(user_input, 1)[1:]
                 model.expand(*word)
 
             elif ':n' in user_input:
-                args = extract_args(user_input, [1, 2])
+                args = extract_args(user_input, [1, 2])[1:]
                 model.ngrams(*args)
+
+            elif ':kdump' in user_input:
+                pass
+
+            elif ':kgen' in user_input:
+                k = extract_args(user_input, 1)[1:]
+                model.kgen(*k)
+
+            elif ':k' in user_input:
+                word = extract_args(user_input, 1)[1:]
+                model.klookup(*word)
 
             else:
                 args = extract_args(user_input, [0, 1])
