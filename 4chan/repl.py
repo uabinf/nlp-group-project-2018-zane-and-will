@@ -123,6 +123,7 @@ class Model:
             print(f"{word} is not in the vocabulary")
 
     def kdump(self):
+        # was intended to dump clusers to a file
         pass
 
     def kgen(self, num):
@@ -172,6 +173,8 @@ def repl():
                 print(':c w1, w2    -- compares the similarity of w1 and w2.')
                 print(':e stem      -- shows all words that reduce to that stem.')
                 print(':n n [x]     -- shows the top x n-grams.')
+                print(':kgen k      -- creates k clusters with k-means algorithm.')
+                print(':k word      -- shows which k-cluster the given word is in')
                 print('<word> [x]   -- shows the top x most similar words to word.')
 
             elif ':o!' in user_input:
